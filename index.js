@@ -1,6 +1,5 @@
 const express = require('express');
-const app = express()
-const bodyParser = require('body-parser');
+const app = express();
 const cors = require('cors');
 const fileUpload = require('express-fileupload');
 const MongoClient = require('mongodb').MongoClient;
@@ -10,7 +9,7 @@ const port = process.env.PORT || 5055;
 
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json())
 app.use(express.static('Review'));
 app.use(fileUpload());
 
@@ -26,7 +25,7 @@ client.connect(err => {
   const adminCollection=client.db("plumberStore").collection("service");
   const dataCollection = client.db("plumberStore").collection("booking");
   const extraCollection = client.db("plumberStore").collection("review");
- 
+  const adminPanelCollection = client.db("plumberStore").collection("admin");
 
         
   app.post('/addService', (req, res) => {
@@ -113,9 +112,39 @@ client.connect(err => {
             })
     });
 
+
+    app.post('/isAdmin', (req, res) => {
+        const email = req.body.email;
+        adminPanelCollection.find({ email: email })
+            .toArray((err, doctors) => {
+                res.send(doctors.length > 0);
+            })
+    })
+
+
+    app.post('/addAdmin', (req, res) => {
+        const file = req.files.file;
+        const name = req.body.name;  
+        const email = req.body.email;
+        const newImg = file.data;
+const encImg = newImg.toString('base64');
+
+var image = {
+    contentType: file.mimetype,
+    size: file.size,
+    img: Buffer.from(encImg, 'base64')
+};
+
+  adminPanelCollection.insertOne({ name, email, image })
+    .then(result => {
+        res.send(result.insertedCount > 0);
+    })
+})
+
+
     });
 
 
     app.listen(port, () => {
         // console.log(`Example app listening at http://localhost:${port}`)
-       }) 
+       })  
